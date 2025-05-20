@@ -7,25 +7,27 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Commands(enum.IntEnum):
     GET_FEEDER_ID = 0x01
-    INITIALIZE_FEEDER = 0x02 
+    INITIALIZE_FEEDER = 0x02
     GET_VERSION = 0x03
     MOVE_FEED_FORWARD = 0x04
     MOVE_FEED_BACKWARD = 0x05
     MOVE_FEED_STATUS = 0x06
-    VENDOR_OPTIONS = 0xbf
-    GET_FEEDER_ADDRESS = 0xc0
-    IDENTIFY_FEEDER = 0xc1
-    PROGRAM_FEEDER_FLOOR = 0xc2
-    UNINITIALIZED_FEEDERS_RESPOND = 0xc3
+    VENDOR_OPTIONS = 0xBF
+    GET_FEEDER_ADDRESS = 0xC0
+    IDENTIFY_FEEDER = 0xC1
+    PROGRAM_FEEDER_FLOOR = 0xC2
+    UNINITIALIZED_FEEDERS_RESPOND = 0xC3
 
-class Photon():
+
+class Photon:
 
     def __init__(self, sm):
 
         self.sm = sm
-        
+
         self._packetID = 0x00
 
         self._outstandingPackets = []
@@ -39,14 +41,14 @@ class Photon():
     def crc(self, data: bytes) -> int:
         crc: int = 0
         for byte in data:
-            crc ^= (byte << 8)
+            crc ^= byte << 8
             for _ in range(8):
                 if crc & 0x8000:
-                    crc ^= (0x1070 << 3)
+                    crc ^= 0x1070 << 3
                 crc <<= 1
-        
+
         return (crc >> 8) & 0xFF
-    
+
     def byteArrayToString(self, byteArray):
         hexString = ""
         for i in byteArray:
@@ -83,23 +85,28 @@ class Photon():
     def buildBytesFromPacket(self, responseString):
         byteArray = []
 
-        for i in range(int(len(responseString)/2)):
-            index = i*2
-            sliced = responseString[index:index+2]
+        for i in range(int(len(responseString) / 2)):
+            index = i * 2
+            sliced = responseString[index : index + 2]
             hexed = int(sliced, 16)
             byteArray.append(hexed)
 
         return byteArray
 
-
-    def sendPacket(self, address, command: Commands, payload = None):
+    def sendPacket(self, address, command: Commands, payload=None):
 
         logger.info("Sending packet payload: " + str(payload))
         # builds a packet without crc
         if payload is None:
             packet = [address, 0x00, self._packetID, 1, command]
         else:
-            packet = [address, 0x00, self._packetID, len(payload) + 1, command] + payload
+            packet = [
+                address,
+                0x00,
+                self._packetID,
+                len(payload) + 1,
+                command,
+            ] + payload
 
         sentPacketID = self._packetID
 
@@ -174,7 +181,7 @@ class Photon():
 
         logger.info("Requesting init at address: " + str(address))
 
-        resp = self.sendPacket(address, Commands.INITIALIZE_FEEDER, payload = uuid)
+        resp = self.sendPacket(address, Commands.INITIALIZE_FEEDER, payload=uuid)
 
         if resp != -1:
             if resp[0] == 0x00:
@@ -188,7 +195,7 @@ class Photon():
 
         logger.info("Requesting " + str(tenths) + " feed from address: " + str(address))
 
-        resp = self.sendPacket(address, Commands.MOVE_FEED_FORWARD, payload = [tenths])
+        resp = self.sendPacket(address, Commands.MOVE_FEED_FORWARD, payload=[tenths])
 
         if resp[0] == 0x00:
             return True
@@ -197,7 +204,7 @@ class Photon():
 
     def moveFeedBackward(self, address, tenths):
 
-        resp = self.sendPacket(address, Commands.MOVE_FEED_BACKWARD, payload = [tenths])
+        resp = self.sendPacket(address, Commands.MOVE_FEED_BACKWARD, payload=[tenths])
 
         if resp[0] == 0x00:
             return True
@@ -215,49 +222,53 @@ class Photon():
 
     def vendorOptions(self, address, payload):
 
-        resp = self.sendPacket(address, Commands.MOVE_FEED_FORWARD, payload = payload)
+        resp = self.sendPacket(address, Commands.MOVE_FEED_FORWARD, payload=payload)
 
         if resp[0] == 0x00:
             return True
         else:
             return False
 
-    def scan(self, min = 1, max = 50):
+    def scan(self, min=1, max=50):
 
         for i in range(min, max):
 
-            #see if a feeder is there
+            # see if a feeder is there
             uuid = self.getFeederUUID(i)
 
-            #if we got a response
+            # if we got a response
             if uuid is not None and uuid != -1 and uuid != -2:
 
-                #initialize
+                # initialize
                 if self.initializeFeeder(i, uuid):
 
-                    logger.info("Initialized feeder " + str(uuid) + " at address " + str(i))
+                    logger.info(
+                        "Initialized feeder " + str(uuid) + " at address " + str(i)
+                    )
 
                     # add to list of active feeders
                     self.activeFeeders.append(uuid)
 
                 else:
-                    logger.error("Found feeder at " + str(i) + " but couldn't initialize")
+                    logger.error(
+                        "Found feeder at " + str(i) + " but couldn't initialize"
+                    )
 
     ## BROADCAST
 
-    #def getFeederAddress(uuid):
+    # def getFeederAddress(uuid):
 
     def identifyFeeder(self, uuid):
 
         logger.info("Requesting identify from UUID: " + str(uuid))
 
-        resp = self.sendPacket(0xFF, Commands.IDENTIFY_FEEDER, payload = uuid)
+        resp = self.sendPacket(0xFF, Commands.IDENTIFY_FEEDER, payload=uuid)
 
         if resp[0] == 0x00:
             return True
         else:
             return False
 
-    #def programFeederFloor(uuid, addressToProgram):
+    # def programFeederFloor(uuid, addressToProgram):
 
-    #def uninitilizedFeedersRespond():
+    # def uninitilizedFeedersRespond():

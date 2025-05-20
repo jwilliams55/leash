@@ -4,9 +4,10 @@
 import cv2
 import numpy as np
 
-class Camera():
 
-    def __init__(self, index = 1):
+class Camera:
+
+    def __init__(self, index=1):
 
         # opening camera from config settings, setting frame size
         self._capture = cv2.VideoCapture(index)
@@ -24,14 +25,14 @@ class Camera():
             cap.release()
             index += 1
         return cameras
-            
+
     def capture(self):
         ret, image = self._capture.read()
         if ret is True:
             return image
         else:
             return False
-    
+
     def getFidPosition(self, debug=False):
 
         while True:
@@ -39,7 +40,7 @@ class Camera():
             if image.any():
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-                blur = cv2.blur(gray,(10,10))
+                blur = cv2.blur(gray, (10, 10))
 
                 mask = cv2.threshold(blur, 128, 255, cv2.THRESH_BINARY)[1]
 
@@ -47,11 +48,11 @@ class Camera():
 
                 cv2.imshow("img", circles)
 
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
             else:
                 print("couldnt take a pic")
-    
+
         self._capture.release()
         cv2.destroyAllWindows()
 
@@ -73,8 +74,5 @@ class Camera():
         #         cv2.waitKey(1)
 
         #     return (x, y, r)
-        
-        return False
-        
 
-        
+        return False

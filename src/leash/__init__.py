@@ -4,17 +4,18 @@ from .camera import Camera
 from .photon import Photon
 from .serial import SerialManager
 import time
-__version__ = '1.0.0'
 
-CMD_NAME = 'leash'  # Lower case command and module name
-APP_NAME = 'Leash'  # Application name in texts meant to be human readable
-APP_URL = 'https://github.com/opulo-inc/'
+__version__ = "1.0.0"
+
+CMD_NAME = "leash"  # Lower case command and module name
+APP_NAME = "Leash"  # Application name in texts meant to be human readable
+APP_URL = "https://github.com/opulo-inc/"
 
 
 logger = logging.getLogger(__name__)
 
 
-class Lumen():
+class Lumen:
     """Lumen object, containing all other subsystems"""
 
     def __init__(self, debug=True, topCam=False, botCam=False):
@@ -24,13 +25,7 @@ class Lumen():
         self.leftPump = Pump("LEFT", self.sm)
         self.rightPump = Pump("RIGHT", self.sm)
 
-        self.position = {
-            "x": None,
-            "y": None,
-            "z": None,
-            "a": 0,
-            "b": 0
-        }
+        self.position = {"x": None, "y": None, "z": None, "a": 0, "b": 0}
 
         if topCam is not False:
             self.topCam = Camera(topCam)
@@ -52,25 +47,20 @@ class Lumen():
             "M260 S1",
             "G0 F50000",
             "M204 T4000",
-            "G90"
+            "G90",
         ]
 
-        self._preHomeCommands = [
-            "M204 T2000"
-        ]
+        self._preHomeCommands = ["M204 T2000"]
 
-        self._postHomeCommands = [
-            "M204 T4000"
-        ]
+        self._postHomeCommands = ["M204 T4000"]
 
         self.parkX = 220
         self.parkY = 400
         self.parkZ = 31.5
 
-
-#####################
-# Serial
-#####################
+    #####################
+    # Serial
+    #####################
 
     def connect(self):
         if self.sm.scanPorts():
@@ -100,9 +90,9 @@ class Lumen():
         # this also uses M115 to learn about the firmware
         pass
 
-#####################
-# Movement
-#####################
+    #####################
+    # Movement
+    #####################
 
     def goto(self, x=None, y=None, z=None, a=None, b=None):
         command = "G0"
@@ -134,8 +124,7 @@ class Lumen():
 
         for i in self._bootCommands:
             if not self.sm.send(i):
-                logger.error(
-                    "Halted sending boot commands because sending failed.")
+                logger.error("Halted sending boot commands because sending failed.")
                 break
 
     def sendPreHomingCommands(self):
@@ -143,7 +132,8 @@ class Lumen():
         for i in self._preHomeCommands:
             if not self.sm.send(i):
                 logger.error(
-                    "Halted sending pre homing commands because sending failed.")
+                    "Halted sending pre homing commands because sending failed."
+                )
                 break
 
     def idle(self):
@@ -190,13 +180,14 @@ class Lumen():
         for i in self._postHomeCommands:
             if not self.sm.send(i):
                 logger.error(
-                    "Halted sending post homing commands because sending failed.")
+                    "Halted sending post homing commands because sending failed."
+                )
                 break
 
     def safeZ(self):
         self.goto(z=self.parkZ)
 
-# LEDS
+    # LEDS
 
     def lightOff(self, index):
         s = 0 if index == "BOT" else 1

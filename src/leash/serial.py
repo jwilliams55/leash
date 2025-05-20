@@ -1,12 +1,14 @@
 """Manager for serial communications
 """
+
 import logging
 import serial.tools.list_ports
 import serial, time, re
 
 logger = logging.getLogger(__name__)
 
-class SerialManager():
+
+class SerialManager:
 
     def __init__(self):
 
@@ -14,12 +16,8 @@ class SerialManager():
         self._ser.baudrate = 119200
         self._ser.timeout = 1
 
-
     def clearQueue(self, timeout=3):
-        messages = [
-            "M400",
-            "M118 E1 done"
-        ]
+        messages = ["M400", "M118 E1 done"]
 
         # send messages
         for i in messages:
@@ -28,18 +26,17 @@ class SerialManager():
             if reMatch is not None:
                 return True
 
-        #wait for done to arrive with timeout
+        # wait for done to arrive with timeout
         start = time.perf_counter()
 
         while True:
-            response = self._ser.readline().decode('utf-8')
+            response = self._ser.readline().decode("utf-8")
             reMatch = re.search("echo:done", response)
             if reMatch is not None:
                 return True
 
             if time.perf_counter() - start > timeout:
                 return False
-            
 
     def scanPorts(self):
 
@@ -66,7 +63,7 @@ class SerialManager():
         if self._ser.is_open:
             logger.info("Serial port already open")
             return True
-        
+
         if self._ser.port != "":
             self._ser.open()
             self._ser.timeout = 1
@@ -81,28 +78,28 @@ class SerialManager():
         else:
             logger.error("Couldn't open serial port")
             return False
-        
+
     def send(self, message):
         # send can return two things
         # it can return bool False if port isnt open
         # or it can respond with marlin's response
-        
-        #check to see if serial port is open
+
+        # check to see if serial port is open
         if self._ser.is_open:
             self._ser.reset_input_buffer()
-            encoded = message.encode('utf-8')
-            self._ser.write(encoded + b'\n')
-            resp = self._ser.readline().decode('utf-8')
+            encoded = message.encode("utf-8")
+            self._ser.write(encoded + b"\n")
+            resp = self._ser.readline().decode("utf-8")
             return resp
         else:
             logger.error("Serial port isn't open.")
             return False
-        
+
     def sendBlind(self, message):
         if self._ser.is_open:
             self._ser.reset_input_buffer()
-            encoded = message.encode('utf-8')
-            self._ser.write(encoded + b'\n')
+            encoded = message.encode("utf-8")
+            self._ser.write(encoded + b"\n")
             return True
         else:
             logger.error("Serial port isn't open.")
@@ -112,17 +109,17 @@ class SerialManager():
         # send can return two things
         # it can return bool False if port isnt open
         # or it can respond with marlin's response
-        
-        #check to see if serial port is open
+
+        # check to see if serial port is open
         if self._ser.is_open:
             self._ser.reset_input_buffer()
-            encoded = message.encode('utf-8')
-            self._ser.write(encoded + b'\n')
+            encoded = message.encode("utf-8")
+            self._ser.write(encoded + b"\n")
             resp = self._ser.readlines()
             decoded_resp = ""
             i = 0
             while i < len(resp):
-                decoded_resp = decoded_resp + resp[i].decode('utf-8')
+                decoded_resp = decoded_resp + resp[i].decode("utf-8")
                 i = i + 1
             return decoded_resp
         else:

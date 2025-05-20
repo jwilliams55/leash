@@ -1,18 +1,19 @@
 """Manager for serial communications
 """
-
+import logging
 import serial.tools.list_ports
 import serial, time, re
 
+logger = logging.getLogger(__name__)
+
 class SerialManager():
 
-    def __init__(self, log):
+    def __init__(self):
 
         self._ser = serial.Serial()
         self._ser.baudrate = 119200
         self._ser.timeout = 1
 
-        self.log = log
 
     def clearQueue(self, timeout=3):
         messages = [
@@ -51,34 +52,34 @@ class SerialManager():
                 try:
                     s = serial.Serial(port)
                     s.close()
-                    self.log.info("Found motherboard at port: " + " with hwid: " + hwid)
+                    logger.info("Found motherboard at port: " + " with hwid: " + hwid)
                     self._ser.port = port
                     return True
 
                 except (OSError, serial.SerialException):
                     pass
 
-        self.log.error("Was unable to find a connected Lumen")
+        logger.error("Was unable to find a connected Lumen")
         return False
 
     def openSerial(self):
         if self._ser.is_open:
-            self.log.info("Serial port already open")
+            logger.info("Serial port already open")
             return True
         
         if self._ser.port != "":
             self._ser.open()
             self._ser.timeout = 1
         else:
-            self.log.error("No serial port selected")
+            logger.error("No serial port selected")
             return False
 
         if self._ser.is_open:
-            self.log.info("Connected to Lumen over serial port: " + self._ser.port)
+            logger.info("Connected to Lumen over serial port: " + self._ser.port)
             self._ser.read_all()
             return True
         else:
-            self.log.error("Couldn't open serial port")
+            logger.error("Couldn't open serial port")
             return False
         
     def send(self, message):
@@ -94,7 +95,7 @@ class SerialManager():
             resp = self._ser.readline().decode('utf-8')
             return resp
         else:
-            self.log.error("Serial port isn't open.")
+            logger.error("Serial port isn't open.")
             return False
         
     def sendBlind(self, message):
@@ -104,7 +105,7 @@ class SerialManager():
             self._ser.write(encoded + b'\n')
             return True
         else:
-            self.log.error("Serial port isn't open.")
+            logger.error("Serial port isn't open.")
             return False
 
     def send_rtn_lines(self, message):
@@ -125,5 +126,5 @@ class SerialManager():
                 i = i + 1
             return decoded_resp
         else:
-            self.log.error("Serial port isn't open.")
+            logger.error("Serial port isn't open.")
             return False

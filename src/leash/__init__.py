@@ -1,35 +1,31 @@
+import logging
+from .pump import Pump
+from .camera import Camera
+from .photon import Photon
+from .serial import SerialManager
+import time
 __version__ = '1.0.0'
 
 CMD_NAME = 'leash'  # Lower case command and module name
 APP_NAME = 'Leash'  # Application name in texts meant to be human readable
 APP_URL = 'https://github.com/opulo-inc/'
 
-import time
 
-from .logger import Logger
-from .serial import SerialManager
+logger = logging.getLogger(__name__)
 
-from .photon import Photon
-from .camera import Camera
-from .pump import Pump
-
-"""Lumen object, containing all other subsystems
-"""
 
 class Lumen():
+    """Lumen object, containing all other subsystems"""
 
-    def __init__(self, debug=True, topCam = False, botCam = False):
+    def __init__(self, debug=True, topCam=False, botCam=False):
+        self.sm = SerialManager()
+        self.photon = Photon(self.sm)
 
-        self.log = Logger(debug)
-
-        self.sm = SerialManager(self.log)
-        self.photon = Photon(self.sm, self.log)
-
-        self.leftPump = Pump("LEFT", self.sm, self.log)
-        self.rightPump = Pump("RIGHT", self.sm, self.log)
+        self.leftPump = Pump("LEFT", self.sm)
+        self.rightPump = Pump("RIGHT", self.sm)
 
         self.position = {
-            "x": None, 
+            "x": None,
             "y": None,
             "z": None,
             "a": 0,
@@ -41,7 +37,6 @@ class Lumen():
 
         if botCam is not False:
             self.botCam = Camera(botCam)
-
 
         self._bootCommands = [
             "G90",
@@ -82,16 +77,16 @@ class Lumen():
             if self.sm.openSerial():
                 self.sendBootCommands()
                 return True
-            
+
         return False
-    
+
     def disconnect(self):
         self.sm._ser.close()
         if self.sm._ser.is_open:
             return False
         else:
             return True
-        
+
     def finishMoves(self):
         self.sm.clearQueue()
 
@@ -100,11 +95,11 @@ class Lumen():
         time.sleep(seconds)
 
     def getHardwareID(self):
-        #probe for all hardware pullup pins, plus chimera jumper
+        # probe for all hardware pullup pins, plus chimera jumper
         # if any of these commands fail, it means is probably v3 or earlier
         # this also uses M115 to learn about the firmware
         pass
-    
+
 #####################
 # Movement
 #####################
@@ -127,28 +122,29 @@ class Lumen():
             command = command + " B" + str(b)
             self.position["b"] = b
 
-        print(command)
+        logger.debug(command)
         self.sm.send(command)
 
     def setSpeed(self, f=None):
         if f is not None:
             command = "G0 F" + str(f)
             self.sm.send(command)
-        
+
     def sendBootCommands(self):
 
         for i in self._bootCommands:
             if not self.sm.send(i):
-               self.log.error("Halted sending boot commands because sending failed.")
-               break
-
+                logger.error(
+                    "Halted sending boot commands because sending failed.")
+                break
 
     def sendPreHomingCommands(self):
 
         for i in self._preHomeCommands:
             if not self.sm.send(i):
-               self.log.error("Halted sending pre homing commands because sending failed.")
-               break
+                logger.error(
+                    "Halted sending pre homing commands because sending failed.")
+                break
 
     def idle(self):
         self.leftPump.off()
@@ -161,10 +157,9 @@ class Lumen():
 
         self.goto(x=self.parkX, y=self.parkY)
 
+    def home(self, x=True, y=True, z=True):
 
-    def home(self, x = True, y = True, z = True):
-
-        self.log.info("Homing")
+        logger.info("Homing")
 
         self.sendPreHomingCommands()
 
@@ -187,19 +182,19 @@ class Lumen():
                 self.sm.send(command)
 
         self.finishMoves()
-        
+
         self.sendPostHomingCommands()
 
     def sendPostHomingCommands(self):
 
         for i in self._postHomeCommands:
             if not self.sm.send(i):
-               self.log.error("Halted sending post homing commands because sending failed.")
-               break
-        
+                logger.error(
+                    "Halted sending post homing commands because sending failed.")
+                break
+
     def safeZ(self):
         self.goto(z=self.parkZ)
-
 
 # LEDS
 
@@ -214,4 +209,4 @@ class Lumen():
 
         self.sm.send(f"M150 P{a} R{r} U{g} B{b} S{s}")
 
-        print("turned on light yo")
+        logger.debug("turned on light yo")

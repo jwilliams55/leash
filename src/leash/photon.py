@@ -3,8 +3,9 @@
 
 import enum
 import re
+import logging
 
-from . import logger
+logger = logging.getLogger(__name__)
 
 class Commands(enum.IntEnum):
     GET_FEEDER_ID = 0x01
@@ -21,10 +22,9 @@ class Commands(enum.IntEnum):
 
 class Photon():
 
-    def __init__(self, sm, log):
+    def __init__(self, sm):
 
         self.sm = sm
-        self.log = log
         
         self._packetID = 0x00
 
@@ -94,7 +94,7 @@ class Photon():
 
     def sendPacket(self, address, command: Commands, payload = None):
 
-        self.log.info("Sending packet payload: " + str(payload))
+        logger.info("Sending packet payload: " + str(payload))
         # builds a packet without crc
         if payload is None:
             packet = [address, 0x00, self._packetID, 1, command]
@@ -105,7 +105,7 @@ class Photon():
 
         gcode = self.buildPacketFromBytes(packet)
 
-        self.log.info("Gcode to send: " + str(gcode))
+        logger.info("Gcode to send: " + str(gcode))
 
         # open serial, send packet, close it
         self.sm._ser.read_all()
@@ -121,19 +121,19 @@ class Photon():
             byteArray = self.buildBytesFromPacket(reMatch)
 
             if byteArray[0] != 0x00:
-                self.log.error("Received packet not addressed to host.")
+                logger.error("Received packet not addressed to host.")
                 return False
 
             elif byteArray[1] != address and address != 0xFF:
-                self.log.error("Received packet not from intended receipient.")
+                logger.error("Received packet not from intended receipient.")
                 return False
 
             elif byteArray[2] != sentPacketID:
-                self.log.error("Received packet with wrong packet id.")
+                logger.error("Received packet with wrong packet id.")
                 return False
 
             elif byteArray[3] != len(byteArray) - 5:
-                self.log.error("Received packet has wrong payload length.")
+                logger.error("Received packet has wrong payload length.")
                 return False
 
             else:
@@ -143,7 +143,7 @@ class Photon():
                 calcCRC = self.crc(sacrificialCRC)
 
                 if receivedCRC != calcCRC:
-                    self.log.error("Received packet with wrong crc.")
+                    logger.error("Received packet with wrong crc.")
                     return False
 
                 else:
@@ -154,7 +154,7 @@ class Photon():
 
     def getFeederUUID(self, address):
 
-        self.log.info("Requesting UUID from address: " + str(address))
+        logger.info("Requesting UUID from address: " + str(address))
 
         resp = self.sendPacket(address, Commands.GET_FEEDER_ID)
 
@@ -172,7 +172,7 @@ class Photon():
 
     def initializeFeeder(self, address, uuid):
 
-        self.log.info("Requesting init at address: " + str(address))
+        logger.info("Requesting init at address: " + str(address))
 
         resp = self.sendPacket(address, Commands.INITIALIZE_FEEDER, payload = uuid)
 
@@ -186,7 +186,7 @@ class Photon():
 
     def moveFeedForward(self, address, tenths):
 
-        self.log.info("Requesting " + str(tenths) + " feed from address: " + str(address))
+        logger.info("Requesting " + str(tenths) + " feed from address: " + str(address))
 
         resp = self.sendPacket(address, Commands.MOVE_FEED_FORWARD, payload = [tenths])
 
@@ -235,13 +235,13 @@ class Photon():
                 #initialize
                 if self.initializeFeeder(i, uuid):
 
-                    self.log.info("Initialized feeder " + str(uuid) + " at address " + str(i))
+                    logger.info("Initialized feeder " + str(uuid) + " at address " + str(i))
 
                     # add to list of active feeders
                     self.activeFeeders.append(uuid)
 
                 else:
-                    self.log.error("Found feeder at " + str(i) + " but couldn't initialize")
+                    logger.error("Found feeder at " + str(i) + " but couldn't initialize")
 
     ## BROADCAST
 
@@ -249,7 +249,7 @@ class Photon():
 
     def identifyFeeder(self, uuid):
 
-        self.log.info("Requesting identify from UUID: " + str(uuid))
+        logger.info("Requesting identify from UUID: " + str(uuid))
 
         resp = self.sendPacket(0xFF, Commands.IDENTIFY_FEEDER, payload = uuid)
 

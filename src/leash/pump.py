@@ -2,14 +2,16 @@
 """
 
 import re, time
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Pump():
 
-    def __init__(self, index, sm, log):
+    def __init__(self, index, sm):
         
         self.index = index
         self.sm = sm
-        self.log = log
 
     def getPressure(self):
         
@@ -49,7 +51,7 @@ class Pump():
 
                 return result
             except Exception as e: 
-                print(e)
+                logger.error("%s", e)
                 return False
 
         
@@ -76,7 +78,7 @@ class Pump():
 
                 return result
             except Exception as e: 
-                print(e)
+                logger.error("%s", e)
                 return False
             
     def getTemperature(self):
@@ -110,8 +112,8 @@ class Pump():
             
             return temperature
     
-        except Exception as e: 
-            print(e)
+        except Exception as e:
+            logger.error("%s", e)
             return False
 
     def off(self):

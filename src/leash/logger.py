@@ -1,4 +1,4 @@
-
+"""Lumen provided logger -- prefer python's logger"""
 from datetime import datetime
 
 class Logger():

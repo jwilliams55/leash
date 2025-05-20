@@ -1,4 +1,6 @@
 import logging
+from typing import Optional
+from dataclasses import dataclass
 from .pump import Pump
 from .camera import Camera
 from .photon import Photon
@@ -15,17 +17,27 @@ APP_URL = "https://github.com/opulo-inc/"
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class Position:
+    """Basic LumenPNP position"""
+    x: Optional[float]
+    y: Optional[float]
+    z: Optional[float]
+    a: Optional[float]
+    b: Optional[float]
+
+
 class Lumen:
     """Lumen object, containing all other subsystems"""
 
-    def __init__(self, debug=True, topCam=False, botCam=False):
+    def __init__(self, topCam=False, botCam=False):
         self.sm = SerialManager()
         self.photon = Photon(self.sm)
 
         self.leftPump = Pump("LEFT", self.sm)
         self.rightPump = Pump("RIGHT", self.sm)
 
-        self.position = {"x": None, "y": None, "z": None, "a": 0, "b": 0}
+        self.position = Position(x=None, y=None, z=None, a=0, b=0)
 
         if topCam is not False:
             self.topCam = Camera(topCam)
@@ -98,19 +110,19 @@ class Lumen:
         command = "G0"
         if x is not None:
             command = command + " X" + str(x)
-            self.position["x"] = x
+            self.position.x = x
         if y is not None:
             command = command + " Y" + str(y)
-            self.position["y"] = y
+            self.position.y = y
         if z is not None:
             command = command + " Z" + str(z)
-            self.position["z"] = z
+            self.position.z = z
         if a is not None:
             command = command + " A" + str(a)
-            self.position["a"] = a
+            self.position.a = a
         if b is not None:
             command = command + " B" + str(b)
-            self.position["b"] = b
+            self.position.b = b
 
         logger.debug(command)
         self.sm.send(command)
@@ -124,7 +136,8 @@ class Lumen:
 
         for i in self._bootCommands:
             if not self.sm.send(i):
-                logger.error("Halted sending boot commands because sending failed.")
+                logger.error(
+                    "Halted sending boot commands because sending failed.")
                 break
 
     def sendPreHomingCommands(self):
@@ -155,9 +168,9 @@ class Lumen:
 
         if x and y and z:
             self.sm.send("G28")
-            self.position["x"] = 0
-            self.position["y"] = 0
-            self.position["z"] = 0
+            self.position.x = 0
+            self.position.y = 0
+            self.position.z = 0
 
         else:
             if x or y or z:
@@ -186,6 +199,16 @@ class Lumen:
 
     def safeZ(self):
         self.goto(z=self.parkZ)
+
+    def safe_move(self, x: float, y: float, z: Optional[float] = None):
+        """Move z to safe position before movement. Returns to original z or 
+            can specify a z height to go to"""
+        original_z = self.position.z
+        if z:
+            original_z = z
+        self.safeZ()
+        self.goto(x, y)
+        self.goto(x, y, original_z)
 
     # LEDS
 
